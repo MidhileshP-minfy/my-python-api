@@ -7,10 +7,8 @@ pipeline {
     // 2. Boolean Parameter: name='SKIP_TESTS', default=false, description='Skip running tests'
     
     environment {
-        DOCKER_REGISTRY = 'saipolaki'  // Replace with your Docker Hub username
-        IMAGE_NAME = 'my-python-text'
-        DEV_EC2_HOST = '3.110.218.88'        // Replace with your dev instance IP
-        PROD_EC2_HOST = 'your-prod-instance-ip'      // Replace with your prod instance IP
+        DOCKER_REGISTRY = 'midhileshp'  // Replace with your Docker Hub username
+        IMAGE_NAME = 'my-python-text
     }
     
     stages {
@@ -148,79 +146,7 @@ pipeline {
                 }
             }
         }
-        
-        stage('🚀 Deploy to Environment') {
-            steps {
-                echo "Deploying to ${env.ENVIRONMENT} environment..."
-                script {
-                    def targetHost = env.ENVIRONMENT == 'prod' ? env.PROD_EC2_HOST : env.DEV_EC2_HOST
-                    
-                    withCredentials([sshUserPrivateKey(credentialsId: 'ec2-ssh-key', 
-                                                       keyFileVariable: 'SSH_KEY')]) {
-                        sh """
-                            echo "Deploying to host: ${targetHost}"
-                            
-                            # Set correct permissions for SSH key
-                            chmod 600 \$SSH_KEY
-                            
-                            # Copy Docker Compose file to target server
-                            scp -i \$SSH_KEY -o StrictHostKeyChecking=no \
-                                deploy/${env.ENVIRONMENT}/docker-compose.${env.ENVIRONMENT}.yml \
-                                ec2-user@${targetHost}:/home/ec2-user/
-                            
-                            # Deploy the application
-                            ssh -i \$SSH_KEY -o StrictHostKeyChecking=no ec2-user@${targetHost} '
-                                export DOCKER_REGISTRY=${DOCKER_REGISTRY}
-                                export IMAGE_NAME=${IMAGE_NAME}
-                                export BUILD_NUMBER=${BUILD_NUMBER}
-                                
-                                echo "Stopping existing containers..."
-                                docker-compose -f docker-compose.${ENVIRONMENT}.yml down || true
-                                
-                                echo "Pulling latest images..."
-                                docker-compose -f docker-compose.${ENVIRONMENT}.yml pull
-                                
-                                echo "Starting new containers..."
-                                docker-compose -f docker-compose.${ENVIRONMENT}.yml up -d
-                                
-                                echo "Cleaning up old images..."
-                                docker system prune -f
-                                
-                                echo "Deployment completed!"
-                            '
-                        """
-                    }
-                }
-            }
-        }
-        
-        stage('🩺 Health Check') {
-            steps {
-                echo 'Performing health check...'
-                script {
-                    def targetHost = env.ENVIRONMENT == 'prod' ? env.PROD_EC2_HOST : env.DEV_EC2_HOST
-                    def port = env.ENVIRONMENT == 'prod' ? '80' : '8000'
-                    
-                    sh """
-                        echo "Waiting for application to start..."
-                        sleep 30
-                        
-                        echo "Checking application health..."
-                        for i in {1..10}; do
-                            if curl -f http://${targetHost}:${port}/health; then
-                                echo "✅ Application is healthy!"
-                                exit 0
-                            fi
-                            echo "⏳ Attempt \$i failed, retrying in 10 seconds..."
-                            sleep 10
-                        done
-                        
-                        echo "❌ Health check failed after 10 attempts"
-                        exit 1
-                    """
-                }
-            }
-        }
+       
     }
     
     post {
