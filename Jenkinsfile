@@ -8,7 +8,7 @@ pipeline {
     
     environment {
         DOCKER_REGISTRY = 'midhileshp'  // Replace with your Docker Hub username
-        IMAGE_NAME = 'my-python-text
+        IMAGE_NAME = 'my-python-text'
     }
     
     stages {
